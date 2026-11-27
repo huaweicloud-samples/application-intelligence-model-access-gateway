@@ -1,0 +1,66 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gateway
+  namespace: default
+  labels:
+    app: gateway
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gateway
+  template:
+    metadata:
+      labels:
+        app: gateway
+    spec:
+      imagePullSecrets:
+        - name: swr-pull-secret
+      containers:
+        - name: gateway
+          image: swr.cn-southwest-2.myhuaweicloud.com/maas-gateway/model-access-gateway:latest
+          imagePullPolicy: Always
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-secret
+                  key: API_KEY
+            - name: MAAS_API_KEY
+              valueFrom:
+                secretKeyRef:
+                  name: gateway-secret
+                  key: MAAS_API_KEY
+            - name: MAAS_CHAT_BASE_URL
+              value: "https://api.modelarts-maas.com/v2"
+            - name: MAAS_EMBED_BASE_URL
+              value: "https://api.modelarts-maas.com/v1"
+            - name: DEFAULT_MODEL
+              value: "DeepSeek-V4-Flash"
+            - name: DEFAULT_EMBEDDING_MODEL
+              value: "BGE-M3"
+            - name: VISION_ENABLED
+              value: "false"
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 5
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 8000
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 128Mi
+            limits:
+              cpu: 500m
+              memory: 512Mi
