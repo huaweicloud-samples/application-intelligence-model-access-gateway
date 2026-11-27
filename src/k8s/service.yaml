@@ -1,0 +1,30 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: gateway
+  namespace: default
+  labels:
+    app: gateway
+  annotations:
+    # 复用/自动创建独享型 ELB：CCE 控制器根据注解创建公网 ELB + EIP + 监听器 + 后端池
+    kubernetes.io/elb.class: performance
+    kubernetes.io/elb.autocreate: |
+      {
+        "type": "public",
+        "bandwidth_name": "gateway-elb-bw",
+        "bandwidth_size": 5,
+        "bandwidth_sharetype": "PER",
+        "bandwidth_chargemode": "traffic",
+        "eip_type": "5_bgp",
+        "available_zone": ["cn-southwest-2d"],
+        "l4_flavor_name": "L4_flavor.elb.s1.small",
+        "l7_flavor_name": "L7_flavor.elb.s1.small"
+      }
+spec:
+  type: LoadBalancer
+  selector:
+    app: gateway
+  ports:
+    - port: 80
+      targetPort: 8000
+      protocol: TCP
